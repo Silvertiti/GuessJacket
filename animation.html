@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Animation de Pixélisation</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+            font-family: Arial, sans-serif;
+        }
+        canvas {
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="animationCanvas"></canvas>
+
+    <script>
+        const canvas = document.getElementById("animationCanvas");
+        const ctx = canvas.getContext("2d");
+        const image = new Image();
+
+        // Récupération dynamique d'une image dans le dossier "images"
+        fetch('image/')
+            .then(response => response.text())
+            .then(html => {
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                const imageLinks = Array.from(doc.querySelectorAll('a'))
+                    .map(link => link.getAttribute('href'))
+                    .filter(href => href.match(/\.(jpg|jpeg|png|gif)$/i));
+                if (imageLinks.length > 0) {
+                    const randomImage = imageLinks[Math.floor(Math.random() * imageLinks.length)];
+                    image.src = `image/${randomImage}`;
+
+                    // Configuration initiale
+                    let pixelSize = 100; // Taille initiale des pixels
+                    const finalPixelSize = 1; // Taille finale des pixels (net)
+                    const animationSpeed = 50; // Vitesse de l'animation en ms
+
+                    // Charge l'image et initialise l'animation
+                    image.onload = () => {
+                        canvas.width = image.width;
+                        canvas.height = image.height;
+                        animatePixelation();
+                    };
+
+                    // Fonction pour dessiner l'image pixélisée
+                    function drawPixelated(size) {
+                        // Dessine l'image réduite
+                        ctx.clearRect(0, 0, canvas.width, canvas.height);
+                        const w = Math.ceil(canvas.width / size);
+                        const h = Math.ceil(canvas.height / size);
+                        ctx.drawImage(image, 0, 0, w, h);
+
+                        // Étire l'image réduite pour remplir le canvas
+                        ctx.imageSmoothingEnabled = false;
+                        ctx.drawImage(canvas, 0, 0, w, h, 0, 0, canvas.width, canvas.height);
+                    }
+
+                    // Fonction pour animer la pixélisation
+                    function animatePixelation() {
+                        if (pixelSize > finalPixelSize) {
+                            drawPixelated(pixelSize);
+                            pixelSize -= 0.5; // Réduit progressivement la taille des pixels
+                            setTimeout(animatePixelation, animationSpeed);
+                        } else {
+                            drawPixelated(finalPixelSize); // Affiche l'image nette à la fin
+                        }
+                    }
+                } else {
+                    console.error('Aucune image trouvée dans le dossier.');
+                }
+            })
+            .catch(error => console.error('Erreur lors de la récupération des images :', error));
+    </script>
+</body>
+</html>
